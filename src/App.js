@@ -19,6 +19,7 @@ function App() {
   // searchInput is the value (const), setSearchInput changes the value of searchInput, useState is initial val, despite it being a const.
   const [searchInput, setSearchInput] = useState("");
   const [accessToken, setAccessToken] = useState("");
+  const [albums, setAlbums] = useState([]);
 
   // react syntax: run only once 
   useEffect( () => {
@@ -35,12 +36,11 @@ function App() {
       .then(result => result.json())
       .then(data => {
         setAccessToken(data.access_token);
-        console.log(accessToken);
+        console.log('access token is ' + data.access_token);
       })
       .catch( error => {
         	console.error('Error', error)
       });
-
   }, [])
 
   // SEARCH --------------------
@@ -57,6 +57,7 @@ function App() {
         'Authorization' : 'Bearer ' + accessToken
       }
     }
+    console.log('fetching artist...');
 
     let artistID = await fetch('https://api.spotify.com/v1/search?q=' + searchInput + '&type=artist', searchParams)
       .then(result => result.json())
@@ -68,14 +69,16 @@ function App() {
         console.error('Error', error)
       });
 
-      console.log('Artist ID is ' + artistID);
+    console.log('Artist ID is ' + artistID);
 
     // GET using artist_ID to get all albums from artist
+    console.log('fetching albums...');
 
-    let albums = await fetch ('https://api.spotify.com/v1/artists/' + artistID + '/albums?include_groups=album&market=US&limit=50', searchParams)
+    let fetchedAlbums = await fetch ('https://api.spotify.com/v1/artists/' + artistID + '/albums?include_groups=album&market=US&limit=50', searchParams)
       .then(result => result.json())
       .then(data => {
         console.log(data);
+        setAlbums(data.items);
         return data.items;
       })
       .catch( error => {
@@ -85,7 +88,7 @@ function App() {
 
     // display albums in card rows
   } 
-
+console.log(albums);
   // the first container contains the inputGroup (text and button): the form control is the text input, with 'search for artist' as the placeholder. onChange detects change in the input text and updates the searchInput variable. Next the button, labeled 'search', onClick event activates js code
   // the second container uses cards to display API call neatly
   return (
@@ -116,12 +119,16 @@ function App() {
       
       <Container>
         <Row className='mx-2 row row-cols-4'>
-        <Card>
-              <Card.Img src="#" />
+          {albums.map( (album, i) => {
+            return (
+              <Card>
+              <Card.Img src={album.images[0].url} />
               <Card.Body>
-                <Card.Title>Album Name Here</Card.Title>
+                <Card.Title>{album.name}</Card.Title>
               </Card.Body>
-            </Card>
+              </Card>
+            )
+          })}
         </Row>
       </Container>
     </div>
