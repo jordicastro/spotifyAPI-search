@@ -1,4 +1,4 @@
-// import logo from './logo.svg';
+
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css'; // css file used for components to access
 import {Container, InputGroup, FormControl, Button, Row, Card} from 'react-bootstrap'; // react-boostrap is the library
@@ -20,6 +20,7 @@ function App() {
   const [searchInput, setSearchInput] = useState("");
   const [accessToken, setAccessToken] = useState("");
   const [albums, setAlbums] = useState([]);
+  const [tracks, setTracks] = useState([]);
 
   // react syntax: run only once 
   useEffect( () => {
@@ -44,19 +45,20 @@ function App() {
   }, [])
 
   // SEARCH --------------------
+
+  let searchParams = {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization' : 'Bearer ' + accessToken
+    }
+  }
   async function search()
   {
     console.log('Searching for ' + searchInput);
 
     // GET using search to get artist_ID
 
-    let searchParams = {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization' : 'Bearer ' + accessToken
-      }
-    }
     console.log('fetching artist...');
 
     let artistID = await fetch('https://api.spotify.com/v1/search?q=' + searchInput + '&type=artist', searchParams)
@@ -78,8 +80,8 @@ function App() {
       .then(result => result.json())
       .then(data => {
         console.log(data);
-        setAlbums(data.items);
-        return data.items;
+        setAlbums(data.items); // useState hook array to be used in main return statement
+        return data.items; // return stores data.items into let fetchedAlbums
       })
       .catch( error => {
         console.error('Error', error)
@@ -88,7 +90,45 @@ function App() {
 
     // display albums in card rows
   } 
-console.log(albums);
+
+  async function getAlbumTracks(albumName)
+  {
+
+    // GET albumID by search (await fetch)
+    console.log('fetching album id...');
+    let albumID = await fetch('https://api.spotify.com/v1/search?q=' + albumName + '&type=album&limit=1', searchParams)
+      .then(response => response.json())
+      .then(data => {
+        console.log('album id is ' + data.albums.items[0].id);
+        console.log(data)
+        return data.albums.items[0].id;
+      })
+      .catch( error => {
+        console.error('Error', error)
+      });
+
+    // GET album Tracks using albumID
+    console.log('fetching tracks...');
+    let fetchedTracks = await fetch('https://api.spotify.com/v1/albums/' + albumID + '/tracks?include_groups=tracks&market=US&limit=50', searchParams)
+      .then(response => response.json())
+      .then(data => {
+        console.log(data);
+        setTracks(data.items);
+        return data.items;
+      })
+      .catch( error => {
+        console.error('Error', error)
+      });
+
+
+    // make a useState hook array [] containing the tracks
+
+    // map them out in the return below
+
+
+
+  }
+//console.log(albums);
   // the first container contains the inputGroup (text and button): the form control is the text input, with 'search for artist' as the placeholder. onChange detects change in the input text and updates the searchInput variable. Next the button, labeled 'search', onClick event activates js code
   // the second container uses cards to display API call neatly
   return (
@@ -125,6 +165,13 @@ console.log(albums);
               <Card.Img src={album.images[0].url} />
               <Card.Body>
                 <Card.Title>{album.name}</Card.Title>
+
+                <Button onClick={() => {
+                  console.log(album.name + ' card has been clicked!');
+                  getAlbumTracks(album.name);
+
+                }}>≣
+                </Button>
               </Card.Body>
               </Card>
             )
